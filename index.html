@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎱 Billar Control</title>
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+  <style>
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      background: linear-gradient(135deg, #0a0a0a, #1a1a1a); 
+      color: #fff; 
+      margin: 0; 
+      padding: 10px; 
+    }
+    .container { max-width: 620px; margin: auto; }
+    .header { text-align: center; margin: 20px 0 15px 0; }
+    .bola8 { font-size: 92px; line-height: 1; margin-bottom: 8px; text-shadow: 0 0 30px #fff, 0 0 60px #e91e63; }
+
+    .section { background: #1f1f1f; padding: 18px; margin: 15px 0; border-radius: 16px; }
+    button { background: #e91e63; color: white; border: none; padding: 14px; margin: 8px 4px; border-radius: 12px; font-size: 17px; font-weight: 600; width: 100%; }
+    .btn-rojo { background: #f44336; }
+    .btn-verde { background: #4caf50; }
+    .btn-azul { background: #2196f3; }
+    .btn-naranja { background: #ff9800; }
+    .btn-gris { background: #666; }
+    .btn-efectivo { background: #4caf50; }
+    .btn-qr { background: #2196f3; }
+
+    input { padding: 14px; margin: 8px 0; width: 100%; border-radius: 12px; border: none; background: #333; color: white; font-size: 17px; }
+
+    .mesa { background: #1f1f1f; padding: 16px; margin: 12px 0; border-radius: 14px; cursor: pointer; }
+    .activa { background: #2e7d32 !important; border-left: 5px solid #4caf50; }
+
+    .tiempo-restante { font-size: 19px; font-weight: bold; color: #ffeb3b; }
+    .alarma { animation: parpadeo 700ms infinite; }
+    @keyframes parpadeo { 50% { background: #f44336 !important; } }
+
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; }
+    .modal-content { background: #222; margin: 8% auto; padding: 25px; width: 90%; max-width: 460px; border-radius: 16px; max-height: 90vh; overflow-y: auto; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="bola8">🎱</div>
+      <h1 class="title">BILLAR CONTROL</h1>
+      <p style="color:#aaa;">La Paz • Bolivia</p>
+    </div>
+
+    <div class="section">
+      <h2>Configuración</h2>
+      <input type="number" id="precioHora" value="50" step="0.5">
+      <button onclick="guardarConfig()">Guardar Precio</button>
+    </div>
+
+    <div class="section">
+      <h2>Agregar Mesa</h2>
+      <input type="text" id="nombreMesa" placeholder="Nombre de la mesa">
+      <button onclick="agregarMesa()">+ Agregar Mesa</button>
+    </div>
+
+    <div class="section">
+      <h2>Mesas</h2>
+      <div id="listaMesas"></div>
+    </div>
+
+    <div style="display:flex; gap:8px;">
+      <button onclick="mostrarHistorial()" class="btn-azul">📋 Historial</button>
+      <button onclick="exportarControlDelDia()" class="btn-naranja">📅 Control del Día</button>
+    </div>
+  </div>
+
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <h2 id="modalTitulo"></h2>
+      <div id="contenidoModal"></div>
+      <button onclick="cerrarModal()" class="btn-gris" style="margin-top:15px;">Cerrar</button>
+    </div>
+  </div>
+
+  <script>
+    let precioPorHora = 50;
+    let mesas = [];
+    let historial = [];
+
+    function cargarDatos() {
+      precioPorHora = parseFloat(localStorage.getItem('precioHora')) || 50;
+      mesas = JSON.parse(localStorage.getItem('mesasBillar')) || [];
+      historial = JSON.parse(localStorage.getItem('historialBillar')) || [];
+      document.getElementById('precioHora').value = precioPorHora;
+    }
+
+    function calcularTiempoJugado(inicio) {
+      const diff = Date.now() - inicio;
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      return { texto: `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}` };
+    }
+
+    function renderMesas() {
+      const lista = document.getElementById('listaMesas');
+      lista.innerHTML = '';
+      
+      mesas.forEach((mesa, index) => {
+        const div = document.createElement('div');
+        div.className = `mesa ${mesa.estado === 'ocupada' ? 'activa' : ''}`;
+        let html = `<strong>${mesa.nombre}</strong><br>`;
+
+        if (mesa.estado === 'ocupada') {
+          if (mesa.tipo === 'tiempo' && mesa.fin) {
+            const diff = mesa.fin - Date.now();
+            const tiempo = diff > 0 
+              ? `${Math.floor(diff/3600000).toString().padStart(2,'0')}:${Math.floor((diff%3600000)/60000).toString().padStart(2,'0')}:${Math.floor((diff%60000)/1000).toString().padStart(2,'0')}` 
+              : "00:00:00";
+            html += `<span class="tiempo-restante ${diff <= 0 ? 'alarma' : ''}">⏳ ${tiempo}</span>`;
+          } else if (mesa.tipo === 'ilimitado') {
+            const t = calcularTiempoJugado(mesa.inicio);
+            html += `<span class="tiempo-restante">▶️ ${t.texto}</span>`;
+          }
+        } else {
+          html += `<small>Libre</small>`;
+        }
+
+        html += `<br><button onclick="event.stopImmediatePropagation(); eliminarMesa(${index});" class="btn-rojo" style="padding:8px 12px; font-size:14px; margin-top:8px; width:auto;">Eliminar</button>`;
+        div.innerHTML = html;
+        div.addEventListener('click', () => abrirModalMesa(index));
+        lista.appendChild(div);
+      });
+    }
+
+    function abrirModalMesa(index) {
+      const mesa = mesas[index];
+      document.getElementById('modalTitulo').textContent = mesa.nombre;
+      let html = '';
+
+      if (mesa.estado === 'ocupada') {
+        html = `<button onclick="finalizarMesa(${index})" class="btn-verde">✅ Finalizar Mesa</button>`;
+      } else {
+        html = `
+          <h3>Tiempo Fijo</h3>
+          <button onclick="iniciarPreset(${index}, 30)" class="btn-preset">30 minutos</button>
+          <button onclick="iniciarPreset(${index}, 60)" class="btn-preset">1 hora</button>
+          <button onclick="iniciarPreset(${index}, 120)" class="btn-preset">2 horas</button>
+          <button onclick="iniciarIlimitado(${index})" style="margin-top:15px;">♾️ Tiempo Ilimitado</button>
+        `;
+      }
+
+      document.getElementById('contenidoModal').innerHTML = html;
+      document.getElementById('modal').style.display = 'block';
+    }
+
+    function iniciarPreset(index, minutos) {
+      const monto = ((minutos / 60) * precioPorHora).toFixed(2);
+      
+      const html = `
+        <p><strong>Precio a cobrar:</strong> ${monto} Bs</p>
+        <p>¿Cómo pagó el cliente?</p>
+        <button onclick="confirmarPago(${index}, ${minutos}, '${monto}', 'Efectivo')" class="btn-efectivo">💵 Efectivo</button>
+        <button onclick="confirmarPago(${index}, ${minutos}, '${monto}', 'QR')" class="btn-qr">📱 QR / Transferencia</button>
+      `;
+      document.getElementById('contenidoModal').innerHTML = html;
+    }
+
+    function confirmarPago(index, minutos, monto, metodo) {
+      if (confirm(`Iniciar ${minutos} minutos\nMonto: ${monto} Bs\nPago: ${metodo}\n\n¿Confirmar?`)) {
+        const mesa = mesas[index];
+        mesa.estado = 'ocupada';
+        mesa.tipo = 'tiempo';
+        mesa.inicio = Date.now();
+        mesa.fin = Date.now() + minutos * 60000;
+        mesa.montoCobrado = monto;
+        mesa.metodoPago = metodo;
+        mesa.alarmaSonada = false;
+
+        historial.unshift({
+          mesa: mesa.nombre,
+          inicio: new Date(mesa.inicio),
+          fin: new Date(mesa.fin),
+          tiempo: `${Math.floor(minutos/60)}h ${minutos%60}min`,
+          montoFinal: parseFloat(monto),
+          metodo: metodo
+        });
+
+        localStorage.setItem('historialBillar', JSON.stringify(historial));
+        localStorage.setItem('mesasBillar', JSON.stringify(mesas));
+        cerrarModal();
+        renderMesas();
+      }
+    }
+
+    function finalizarMesa(index) {
+      const mesa = mesas[index];
+      alert(`✅ Mesa finalizada correctamente\nCobrado: ${mesa.montoCobrado} Bs (${mesa.metodoPago})`);
+      liberarMesa(index);
+    }
+
+    function liberarMesa(index) {
+      const mesa = mesas[index];
+      mesa.estado = 'libre';
+      mesa.tipo = null;
+      mesa.inicio = null;
+      mesa.fin = null;
+      localStorage.setItem('mesasBillar', JSON.stringify(mesas));
+      cerrarModal();
+      renderMesas();
+    }
+
+    function iniciarIlimitado(index) {
+      const mesa = mesas[index];
+      mesa.estado = 'ocupada';
+      mesa.tipo = 'ilimitado';
+      mesa.inicio = Date.now();
+      localStorage.setItem('mesasBillar', JSON.stringify(mesas));
+      cerrarModal();
+      renderMesas();
+    }
+
+    function actualizarTimers() {
+      let alarma = false;
+      mesas.forEach(mesa => {
+        if (mesa.tipo === 'tiempo' && mesa.fin && Date.now() >= mesa.fin && !mesa.alarmaSonada) {
+          mesa.alarmaSonada = true;
+          alarma = true;
+        }
+      });
+
+      if (alarma) {
+        if (navigator.vibrate) navigator.vibrate([800, 400, 800, 400, 1200]);
+        const audio = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
+        audio.play().catch(() => {});
+        alert("⏰ ¡TIEMPO TERMINADO!");
+      }
+      renderMesas();
+    }
+
+    function cerrarModal() { document.getElementById('modal').style.display = 'none'; }
+    function guardarConfig() { precioPorHora = parseFloat(document.getElementById('precioHora').value) || 50; localStorage.setItem('precioHora', precioPorHora); alert('Precio guardado'); }
+    function agregarMesa() {
+      const nombre = document.getElementById('nombreMesa').value.trim();
+      if (!nombre) return alert("Escribe el nombre");
+      mesas.push({id: Date.now(), nombre, estado: 'libre'});
+      localStorage.setItem('mesasBillar', JSON.stringify(mesas));
+      renderMesas();
+      document.getElementById('nombreMesa').value = '';
+    }
+    function eliminarMesa(index) {
+      if (confirm("¿Eliminar esta mesa?")) {
+        mesas.splice(index, 1);
+        localStorage.setItem('mesasBillar', JSON.stringify(mesas));
+        renderMesas();
+      }
+    }
+    function mostrarHistorial() { alert("Historial completo (próximamente)"); }
+    function exportarControlDelDia() { alert("Exportando control del día..."); }
+
+    window.onload = () => {
+      cargarDatos();
+      renderMesas();
+      setInterval(actualizarTimers, 1000);
+    };
+  </script>
+</body>
+</html>
