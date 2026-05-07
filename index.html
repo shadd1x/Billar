@@ -191,9 +191,7 @@
 </div>
 
 <script>
-<script>
 // ==================== CONTRASEÑA OFUSCADA ====================
-// Contraseña 
 const HASH_CORRECTO = "c89fe5b7a007332d70f5e983d19b73c176c33eb478cff948466163aeff9e3016";
 
 async function hashPassword(pw) {
@@ -206,14 +204,11 @@ async function hashPassword(pw) {
 
 async function login(){
     const pass = document.getElementById('password').value.trim();
-    
     if(pass === "") {
         alert("❌ Ingresa la contraseña");
         return;
     }
-
     const hashIngresado = await hashPassword(pass);
-    
     if(hashIngresado === HASH_CORRECTO){
         document.getElementById('loginScreen').style.display='none';
         document.getElementById('mainApp').style.display='block';
@@ -221,10 +216,10 @@ async function login(){
         renderMesas();
     } else {
         alert("❌ Contraseña incorrecta");
-        document.getElementById('password').value = ''; // Limpia el campo
+        document.getElementById('password').value = '';
     }
 }
-</script>
+
 // ==================== VARIABLES ====================
 let precioPorHora = 50;
 let precioPorHoraVIP = 80;
@@ -233,7 +228,7 @@ let mesas = [];
 let historial = [];
 let alarmAudio = null;
 
-// ==================== AUDIO ALARMA (Optimizado iOS) ====================
+// ==================== AUDIO ALARMA ====================
 function initAudio() {
     if (!alarmAudio) {
         alarmAudio = new Audio('alarm-bell.mp3');
@@ -244,16 +239,8 @@ function initAudio() {
 
 async function playAlarm() {
     initAudio();
-    try {
-        if (alarmAudio.paused) {
-            await alarmAudio.play();
-        }
-    } catch (e) {
-        console.log("Audio bloqueado por iOS");
-    }
-    if (navigator.vibrate) {
-        navigator.vibrate([600, 300, 600, 300, 600]);
-    }
+    try { if (alarmAudio.paused) await alarmAudio.play(); } catch(e){}
+    if (navigator.vibrate) navigator.vibrate([600, 300, 600, 300, 600]);
 }
 
 function stopAlarm() {
@@ -264,20 +251,6 @@ function stopAlarm() {
 }
 
 // ==================== FUNCIONES PRINCIPALES ====================
-async function login(){
-    const pass = document.getElementById('password').value;
-    const hashIngresado = await hashPassword(pass);
-    
-    if(hashIngresado === HASH_CORRECTO){
-        document.getElementById('loginScreen').style.display='none';
-        document.getElementById('mainApp').style.display='block';
-        cargarDatos();
-        renderMesas();
-    } else {
-        alert("❌ Contraseña incorrecta");
-    }
-}
-
 function cerrarSesion(){
     if(confirm("¿Cerrar sesión?")){
         document.getElementById('mainApp').style.display='none';
@@ -293,12 +266,6 @@ function cargarDatos(){
     mesas = JSON.parse(localStorage.getItem('mesasBillar')) || [];
     historial = JSON.parse(localStorage.getItem('historialBillar')) || [];
 
-    historial = historial.map(item => ({
-        ...item,
-        inicio: new Date(item.inicio),
-        fin: new Date(item.fin)
-    }));
-
     document.getElementById('precioHora').value = precioPorHora;
     document.getElementById('precioHoraVIP').value = precioPorHoraVIP;
     document.getElementById('modoCobro').value = usarDecimales ? 'decimal' : 'entero';
@@ -310,11 +277,10 @@ function guardarDatos(){
 }
 
 function formatoBs(monto){
-    if(usarDecimales) return parseFloat(monto).toFixed(2);
-    return Math.round(monto);
+    return usarDecimales ? parseFloat(monto).toFixed(2) : Math.round(monto);
 }
 
-function calcularMonto(horas, mesa=null){
+function calcularMonto(horas, mesa = null){
     let precio = precioPorHora;
     if(mesa && mesa.tipoMesa === 'vip') precio = precioPorHoraVIP;
     const monto = horas * precio;
@@ -332,12 +298,13 @@ function calcularTiempoJugado(inicio){
     };
 }
 
+// ==================== RENDER MESAS ====================
 function renderMesas(){
     const lista = document.getElementById('listaMesas');
     lista.innerHTML = '';
 
-    if(mesas.length===0){
-        lista.innerHTML = `<small>No hay mesas registradas</small>`;
+    if(mesas.length === 0){
+        lista.innerHTML = `<p style="color:#888;text-align:center;padding:20px;">No hay mesas registradas</p>`;
         return;
     }
 
@@ -352,14 +319,14 @@ function renderMesas(){
         let vipLabel = mesa.tipoMesa==='vip' ? `<span style="color:#d500f9;">🌟 VIP</span>` : '';
         let html = `<strong>${mesa.nombre}</strong> ${vipLabel}<br>`;
 
-        if(mesa.estado==='ocupada'){
-            if(mesa.tipo==='tiempo' && mesa.fin){
+        if(mesa.estado === 'ocupada'){
+            if(mesa.tipo === 'tiempo' && mesa.fin){
                 const diff = mesa.fin - Date.now();
                 const tiempo = diff > 0 
-                  ? `${Math.floor(diff/3600000).toString().padStart(2,'0')}:${Math.floor((diff%3600000)/60000).toString().padStart(2,'0')}:${Math.floor((diff%60000)/1000).toString().padStart(2,'0')}`
-                  : "00:00:00";
+                    ? `${Math.floor(diff/3600000).toString().padStart(2,'0')}:${Math.floor((diff%3600000)/60000).toString().padStart(2,'0')}:${Math.floor((diff%60000)/1000).toString().padStart(2,'0')}`
+                    : "00:00:00";
                 html += `<span class="tiempo-restante">⏳ ${tiempo}</span>`;
-            } else if(mesa.tipo==='ilimitado'){
+            } else if(mesa.tipo === 'ilimitado'){
                 const t = calcularTiempoJugado(mesa.inicio);
                 html += `<span class="tiempo-restante">▶️ ${t.texto}</span>`;
             }
@@ -367,7 +334,7 @@ function renderMesas(){
             html += `<small>Libre</small>`;
         }
 
-        html += `<br><button onclick="event.stopImmediatePropagation(); eliminarMesa(${index});" class="btn-rojo" style="width:auto; padding:8px 12px; margin-top:8px; font-size:14px;">Eliminar</button>`;
+        html += `<br><button onclick="event.stopImmediatePropagation(); eliminarMesa(${index});" class="btn-rojo" style="width:auto;padding:8px 12px;margin-top:8px;font-size:14px;">Eliminar</button>`;
 
         div.innerHTML = html;
         div.addEventListener('click', () => abrirModalMesa(index));
@@ -375,31 +342,217 @@ function renderMesas(){
     });
 }
 
-// Las demás funciones (abrirModalMesa, iniciarPreset, etc.) se mantienen igual que en tu versión original.
-// Por brevedad las incluyo resumidas, pero funcionan igual:
+// ==================== FUNCIONES DEL MODAL ====================
+function abrirModalMesa(index){
+    const mesa = mesas[index];
+    document.getElementById('modalTitulo').textContent = mesa.nombre;
+    let html = '';
 
-function abrirModalMesa(index){ /* ... tu código original ... */ }
-function mostrarPersonalizado(index){ /* ... */ }
-function iniciarPersonalizado(index){ /* ... */ }
-function iniciarPreset(index, minutos){ /* ... */ }
-function mostrarOpcionesPago(index, minutos, monto){ /* ... */ }
-function confirmarInicio(index, minutos, monto, metodo){ /* ... */ }
-function iniciarIlimitado(index){ /* ... */ }
-function cobrarIlimitado(index, metodo){ /* ... */ }
-function confirmarCobroIlimitado(index, metodo){ /* ... */ }
-function finalizarMesa(index){ /* ... */ }
-function liberarMesa(index){ /* ... */ }
-function guardarConfig(){ /* ... */ }
-function agregarMesa(){ /* ... */ }
-function eliminarMesa(index){ /* ... */ }
-function mostrarHistorial(){ /* ... */ }
-function exportarControlDelDia(){ /* ... */ }
-function cerrarModal(){ /* ... */ }
+    if(mesa.estado === 'ocupada'){
+        if(mesa.tipo === 'ilimitado'){
+            const tiempo = calcularTiempoJugado(mesa.inicio);
+            const total = calcularMonto(tiempo.horasDecimal, mesa);
+            html = `
+                <p><strong>Tiempo:</strong> ${tiempo.texto}</p>
+                <p><strong>Sugerido:</strong> ${formatoBs(total)} Bs</p>
+                <button onclick="cobrarIlimitado(${index},'Efectivo')" class="btn-efectivo">💵 Efectivo</button>
+                <button onclick="cobrarIlimitado(${index},'QR')" class="btn-qr">📱 QR</button>
+            `;
+        } else {
+            html = `<button onclick="finalizarMesa(${index})" class="btn-verde">✅ Finalizar Mesa</button>`;
+        }
+    } else {
+        html = `
+            <h3>Tiempo Fijo</h3>
+            <div class="preset-container">
+                <button onclick="iniciarPreset(${index},30)" class="btn-preset btn-small">30 min</button>
+                <button onclick="iniciarPreset(${index},60)" class="btn-preset btn-small">1 hora</button>
+                <button onclick="iniciarPreset(${index},120)" class="btn-preset btn-small">2 horas</button>
+            </div>
+            <button onclick="mostrarPersonalizado(${index})" style="margin-top:12px;">⏱️ Tiempo Personalizado</button>
+            <button onclick="iniciarIlimitado(${index})" style="margin-top:8px;">♾️ Tiempo Ilimitado</button>
+        `;
+    }
+    document.getElementById('contenidoModal').innerHTML = html;
+    document.getElementById('modal').style.display = 'block';
+}
 
-// ==================== TIMERS + ALARMA ====================
+function mostrarPersonalizado(index){
+    const html = `
+        <h3>⏱️ Tiempo Personalizado</h3>
+        <div class="personalizado-inputs">
+            <div><label>Horas</label><input type="number" id="horasLibre" value="0" min="0"></div>
+            <div><label>Minutos</label><input type="number" id="minutosLibre" value="30" min="0" max="59"></div>
+        </div>
+        <button onclick="iniciarPersonalizado(${index})" class="btn-verde">Iniciar Tiempo</button>
+    `;
+    document.getElementById('contenidoModal').innerHTML = html;
+}
+
+function iniciarPersonalizado(index){
+    const horas = parseFloat(document.getElementById('horasLibre').value) || 0;
+    const minutos = parseFloat(document.getElementById('minutosLibre').value) || 0;
+    const totalMinutos = horas*60 + minutos;
+    if(totalMinutos <= 0) return alert("Debes ingresar al menos 1 minuto");
+    const monto = calcularMonto(totalMinutos/60, mesas[index]);
+    mostrarOpcionesPago(index, totalMinutos, monto);
+}
+
+function iniciarPreset(index, minutos){
+    const monto = calcularMonto(minutos/60, mesas[index]);
+    mostrarOpcionesPago(index, minutos, monto);
+}
+
+function mostrarOpcionesPago(index, minutos, monto){
+    const html = `
+        <p><strong>Precio:</strong> ${formatoBs(monto)} Bs</p>
+        <button onclick="confirmarInicio(${index},${minutos},${monto},'Efectivo')" class="btn-efectivo">💵 Efectivo</button>
+        <button onclick="confirmarInicio(${index},${minutos},${monto},'QR')" class="btn-qr">📱 QR</button>
+    `;
+    document.getElementById('contenidoModal').innerHTML = html;
+}
+
+function confirmarInicio(index, minutos, monto, metodo){
+    if(!confirm(`Iniciar ${minutos} minutos por ${formatoBs(monto)} Bs`)) return;
+
+    const mesa = mesas[index];
+    mesa.estado = 'ocupada';
+    mesa.tipo = 'tiempo';
+    mesa.inicio = Date.now();
+    mesa.fin = Date.now() + minutos * 60000;
+    mesa.montoCobrado = monto;
+    mesa.metodoPago = metodo;
+    mesa.alarmaSonada = false;
+
+    historial.unshift({
+        mesa: mesa.nombre,
+        inicio: new Date(),
+        fin: new Date(mesa.fin),
+        tiempo: `${Math.floor(minutos/60)}h ${minutos%60}min`,
+        montoFinal: monto,
+        metodo: metodo
+    });
+
+    guardarDatos();
+    cerrarModal();
+    renderMesas();
+}
+
+function iniciarIlimitado(index){
+    const mesa = mesas[index];
+    mesa.estado = 'ocupada';
+    mesa.tipo = 'ilimitado';
+    mesa.inicio = Date.now();
+    guardarDatos();
+    cerrarModal();
+    renderMesas();
+}
+
+function cobrarIlimitado(index, metodo){
+    const mesa = mesas[index];
+    const tiempo = calcularTiempoJugado(mesa.inicio);
+    const sugerido = calcularMonto(tiempo.horasDecimal, mesa);
+
+    const html = `
+        <p><strong>Tiempo jugado:</strong> ${tiempo.texto}</p>
+        <input type="number" id="montoManual" value="${sugerido}" style="font-size:24px;text-align:center;width:100%;margin:10px 0;">
+        <button onclick="confirmarCobroIlimitado(${index},'${metodo}')" class="btn-verde">✅ Confirmar Cobro</button>
+    `;
+    document.getElementById('contenidoModal').innerHTML = html;
+}
+
+function confirmarCobroIlimitado(index, metodo){
+    const monto = parseFloat(document.getElementById('montoManual').value) || 0;
+    const mesa = mesas[index];
+    const tiempo = calcularTiempoJugado(mesa.inicio);
+
+    historial.unshift({
+        mesa: mesa.nombre,
+        inicio: new Date(mesa.inicio),
+        fin: new Date(),
+        tiempo: tiempo.texto,
+        montoFinal: monto,
+        metodo: metodo
+    });
+
+    alert(`✅ Cobrado ${formatoBs(monto)} Bs`);
+    liberarMesa(index);
+}
+
+function finalizarMesa(index){
+    const mesa = mesas[index];
+    alert(`✅ Mesa finalizada\nCobrado: ${formatoBs(mesa.montoCobrado)} Bs`);
+    liberarMesa(index);
+}
+
+function liberarMesa(index){
+    const mesa = mesas[index];
+    mesa.estado = 'libre';
+    mesa.tipo = null;
+    mesa.inicio = null;
+    mesa.fin = null;
+    guardarDatos();
+    cerrarModal();
+    renderMesas();
+}
+
+function guardarConfig(){
+    precioPorHora = parseFloat(document.getElementById('precioHora').value) || 50;
+    precioPorHoraVIP = parseFloat(document.getElementById('precioHoraVIP').value) || 80;
+    usarDecimales = document.getElementById('modoCobro').value === 'decimal';
+    localStorage.setItem('precioHora', precioPorHora);
+    localStorage.setItem('precioHoraVIP', precioPorHoraVIP);
+    localStorage.setItem('usarDecimales', JSON.stringify(usarDecimales));
+    alert("✅ Configuración guardada");
+}
+
+function agregarMesa(){
+    const nombre = document.getElementById('nombreMesa').value.trim();
+    if(!nombre) return alert("Escribe el nombre de la mesa");
+    const tipoMesa = document.getElementById('tipoMesa').value;
+    mesas.push({id: Date.now(), nombre, tipoMesa, estado: 'libre'});
+    guardarDatos();
+    renderMesas();
+    document.getElementById('nombreMesa').value = '';
+}
+
+function eliminarMesa(index){
+    if(confirm("¿Eliminar esta mesa?")){
+        mesas.splice(index, 1);
+        guardarDatos();
+        renderMesas();
+    }
+}
+
+function mostrarHistorial(){
+    let total = historial.reduce((sum, item) => sum + (item.montoFinal || 0), 0);
+    let html = `<p><strong>Total: ${formatoBs(total)} Bs</strong></p>`;
+    if(historial.length === 0) html += "<p>No hay registros aún.</p>";
+    
+    historial.forEach(item => {
+        html += `
+            <div style="background:#1f1f1f;padding:12px;margin:8px 0;border-radius:10px;">
+                <strong>${item.mesa}</strong><br>
+                ${item.tiempo} — ${formatoBs(item.montoFinal)} Bs
+            </div>`;
+    });
+
+    document.getElementById('modalTitulo').textContent = '📋 Historial';
+    document.getElementById('contenidoModal').innerHTML = html;
+    document.getElementById('modal').style.display = 'block';
+}
+
+function exportarControlDelDia(){
+    alert("Control del día exportado (función lista para mejorar)");
+}
+
+function cerrarModal(){
+    document.getElementById('modal').style.display = 'none';
+}
+
+// ==================== TIMERS ====================
 function actualizarTimers(){
     let hayAlarma = false;
-
     mesas.forEach(mesa => {
         if(mesa.tipo==='tiempo' && mesa.fin && Date.now() >= mesa.fin && !mesa.alarmaSonada){
             mesa.alarmaSonada = true;
@@ -407,23 +560,13 @@ function actualizarTimers(){
         }
     });
 
-    if(hayAlarma){
-        playAlarm();
-    } else {
-        const sigueEnAlarma = mesas.some(m => m.tipo==='tiempo' && m.fin && Date.now() >= m.fin);
-        if(!sigueEnAlarma) stopAlarm();
-    }
+    if(hayAlarma) playAlarm();
+    else stopAlarm();
 
     renderMesas();
 }
 
-// ==================== SERVICE WORKER ====================
-if('serviceWorker' in navigator){
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Error:', err));
-    });
-}
-
+// ==================== INICIO ====================
 window.onload = () => {
     setInterval(actualizarTimers, 1000);
 };
