@@ -228,14 +228,14 @@ let mesas = [];
 let historial = [];
 let alarmAudio = null;
 
-// ==================== AUDIO PARA iOS (Versión Mejorada) ====================
+// ==================== AUDIO ALARMA MEJORADA PARA iOS ====================
 let alarmAudio = null;
 
 function initAudio() {
     if (!alarmAudio) {
         alarmAudio = new Audio('alarm-bell.mp3');
         alarmAudio.preload = "auto";
-        alarmAudio.volume = 1.0;
+        // No usar loop = true al inicio (mejor para iOS)
     }
 }
 
@@ -243,20 +243,17 @@ async function playAlarm() {
     initAudio();
     
     try {
-        // Desbloqueo forzado para iOS
-        alarmAudio.currentTime = 0;
-        const playPromise = alarmAudio.play();
-        
-        if (playPromise !== undefined) {
-            await playPromise;
-            console.log("🎵 Sonido iniciado");
+        // Importante: intentar desbloquear primero
+        if (alarmAudio.paused) {
+            alarmAudio.currentTime = 0;
+            await alarmAudio.play();
+            console.log("✅ Sonido reproduciéndose");
         }
     } catch (err) {
-        console.log("iOS bloqueó audio:", err);
-        
-        // Fallback fuerte con vibración
+        console.log("❌ iOS bloqueó el audio:", err);
+        // Fallback: vibración más fuerte
         if (navigator.vibrate) {
-            navigator.vibrate([1200, 300, 800, 300, 1200]);
+            navigator.vibrate([800, 400, 800, 400, 800]);
         }
     }
 }
