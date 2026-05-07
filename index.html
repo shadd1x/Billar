@@ -543,7 +543,39 @@ function mostrarHistorial(){
 }
 
 function exportarControlDelDia(){
-    alert("Control del día exportado (función lista para mejorar)");
+    const hoy = new Date().toISOString().slice(0,10); // YYYY-MM-DD
+    
+    // Filtrar solo las sesiones de hoy
+    const delDia = historial.filter(item => {
+        const fechaInicio = new Date(item.inicio);
+        return fechaInicio.toISOString().slice(0,10) === hoy;
+    });
+
+    if(delDia.length === 0){
+        alert("ℹ️ No hay registros para hoy");
+        return;
+    }
+
+    // Crear CSV
+    let csv = "Mesa,Inicio,Fin,Tiempo,Monto (Bs),Método\n";
+    
+    delDia.forEach(item => {
+        const inicio = new Date(item.inicio).toLocaleString('es-BO');
+        const fin = new Date(item.fin).toLocaleString('es-BO');
+        csv += `"${item.mesa}","${inicio}","${fin}","${item.tiempo || ''}",${formatoBs(item.montoFinal || 0)},"${item.metodo || 'N/A'}"\n`;
+    });
+
+    // Descargar archivo
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Control_Billar_${hoy}.csv`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    alert(`✅ Archivo descargado correctamente\n\nControl_Billar_${hoy}.csv`);
 }
 
 function cerrarModal(){
