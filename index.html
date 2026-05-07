@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>🎱 Billar Control VIP</title>
+
+<meta name="theme-color" content="#0a0a0a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+<style>
+*{
+  box-sizing:border-box;
+}
+
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:linear-gradient(135deg,#0a0a0a,#1a1a1a);
+  color:#fff;
+  margin:0;
+  padding:10px;
+}
+
+.container{
+  max-width:620px;
+  margin:auto;
+}
+
+.header{
+  text-align:center;
+  margin:20px 0 15px 0;
+}
+
+.bola8{
+  font-size:92px;
+  line-height:1;
+  margin-bottom:8px;
+  text-shadow: 0 0 30px #fff, 0 0 60px #e91e63;
+}
+
+.section{
+  background:#1f1f1f;
+  padding:18px;
+  margin:15px 0;
+  border-radius:16px;
+}
+
+button{
+  background:#e91e63;
+  color:white;
+  border:none;
+  padding:14px;
+  margin:8px 4px;
+  border-radius:12px;
+  font-size:17px;
+  font-weight:600;
+  width:100%;
+  cursor:pointer;
+}
+
+button:active{
+  transform:scale(.98);
+}
+
+.btn-small {
+  padding: 10px 12px;
+  font-size: 15px;
+  margin: 4px;
+  flex: 1;
+}
+
+.preset-container {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* Mejora para tiempo personalizado */
+.personalizado-inputs {
+  display: flex;
+  gap: 12px;
+  margin: 15px 0;
+}
+
+.personalizado-inputs div {
+  flex: 1;
+}
+
+input, select{
+  width:100%;
+  padding:14px;
+  margin:8px 0;
+  border:none;
+  border-radius:12px;
+  background:#333;
+  color:white;
+  font-size:17px;
+}
+
+.btn-rojo{ background:#f44336; }
+.btn-verde{ background:#4caf50; }
+.btn-azul{ background:#2196f3; }
+.btn-naranja{ background:#ff9800; }
+.btn-gris{ background:#666; }
+.btn-efectivo{ background:#4caf50; }
+.btn-qr{ background:#2196f3; }
+.btn-preset{ background:#9c27b0; }
+
+/* MESAS */
+.mesa{
+  background:#1f1f1f;
+  padding:16px;
+  margin:12px 0;
+  border-radius:14px;
+  cursor:pointer;
+  border:3px solid transparent;
+  transition:all .4s;
+}
+
+.activa{
+  background:#2e7d32;
+  border:3px solid #4caf50;
+}
+
+.vip{
+  border:3px solid #8e24aa;
+  background:#1f1f1f;
+}
+
+.vip.activa{
+  background:#311b92;
+  border:3px solid #d500f9;
+  box-shadow: 0 0 15px #d500f9, 0 0 30px rgba(213,0,249,.4);
+}
+
+.vip.alarma{
+  animation:alarmaVIP 700ms infinite alternate;
+}
+
+@keyframes alarmaVIP{
+  from{ transform:scale(1); }
+  to{ 
+    transform:scale(1.03); 
+    background:#6a1b9a;
+    border-color:#e040fb;
+    box-shadow: 0 0 20px #e040fb, 0 0 40px rgba(224,64,251,.6);
+  }
+}
+
+.alarma{
+  animation:alarmaFuerte 700ms infinite alternate;
+}
+
+@keyframes alarmaFuerte{
+  from{ transform:scale(1); }
+  to{ transform:scale(1.02); background:#c62828; border-color:#f44336; }
+}
+
+.tiempo-restante{
+  font-size:19px;
+  font-weight:bold;
+  color:#ffeb3b;
+}
+
+.modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.95);
+  z-index:100;
+}
+
+.modal-content{
+  background:#222;
+  margin:8% auto;
+  padding:25px;
+  width:90%;
+  max-width:460px;
+  border-radius:16px;
+  max-height:90vh;
+  overflow-y:auto;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <div class="bola8">🎱</div>
+    <h1>BILLAR CONTROL VIP</h1>
+    <p style="color:#aaa;">La Paz • Bolivia</p>
+  </div>
+
+  <!-- LOGIN -->
+  <div id="loginScreen">
+    <div class="section">
+      <h2>🔐 Iniciar Sesión</h2>
+      <input type="password" id="password" placeholder="Contraseña" onkeypress="if(event.key==='Enter') login()">
+      <button onclick="login()">Entrar</button>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div id="mainApp" style="display:none;">
+
+    <div style="text-align:right; margin-bottom:10px;">
+      <button onclick="cerrarSesion()" class="btn-gris" style="width:auto; padding:8px 16px; font-size:15px;">
+        🚪 Cerrar Sesión
+      </button>
+    </div>
+
+    <!-- CONFIG -->
+    <div class="section">
+      <h2>⚙️ Configuración</h2>
+      <label>Precio Mesa Normal (Bs/Hora)</label>
+      <input type="number" id="precioHora" value="50" step="0.01">
+      <label>Precio Mesa VIP (Bs/Hora)</label>
+      <input type="number" id="precioHoraVIP" value="80" step="0.01">
+      <select id="modoCobro">
+        <option value="entero">Cobrar sin decimales</option>
+        <option value="decimal">Cobrar con decimales</option>
+      </select>
+      <button onclick="guardarConfig()">Guardar Configuración</button>
+    </div>
+
+    <!-- AGREGAR -->
+    <div class="section">
+      <h2>➕ Agregar Mesa</h2>
+      <input type="text" id="nombreMesa" placeholder="Nombre de la mesa">
+      <select id="tipoMesa">
+        <option value="normal">Mesa Normal</option>
+        <option value="vip">Mesa VIP</option>
+      </select>
+      <button onclick="agregarMesa()">+ Agregar Mesa</button>
+    </div>
+
+    <!-- MESAS -->
+    <div class="section">
+      <h2>🎱 Mesas</h2>
+      <div id="listaMesas"></div>
+    </div>
+
+    <div style="display:flex; gap:8px;">
+      <button onclick="mostrarHistorial()" class="btn-azul">📋 Historial</button>
+      <button onclick="exportarControlDelDia()" class="btn-naranja">📅 Control del Día</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <h2 id="modalTitulo"></h2>
+    <div id="contenidoModal"></div>
+    <button onclick="cerrarModal()" class="btn-gris" style="margin-top:15px;">Cerrar</button>
+  </div>
+</div>
+
+<script>
+const PASSWORD = "5525";
+
+let precioPorHora = 50;
+let precioPorHoraVIP = 80;
+let usarDecimales = false;
+let mesas = [];
+let historial = [];
+
+// ... (mantengo todas las funciones anteriores iguales) ...
+
+function login(){
+  const pass = document.getElementById('password').value;
+  if(pass === PASSWORD){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('mainApp').style.display='block';
+    cargarDatos();
+    renderMesas();
+  }else{
+    alert("❌ Contraseña incorrecta");
+  }
+}
+
+function cerrarSesion(){
+  if(confirm("¿Cerrar sesión?")){
+    document.getElementById('mainApp').style.display='none';
+    document.getElementById('loginScreen').style.display='block';
+    document.getElementById('password').value = '';
+  }
+}
+
+function cargarDatos(){
+  precioPorHora = parseFloat(localStorage.getItem('precioHora')) || 50;
+  precioPorHoraVIP = parseFloat(localStorage.getItem('precioHoraVIP')) || 80;
+  usarDecimales = JSON.parse(localStorage.getItem('usarDecimales')) || false;
+  mesas = JSON.parse(localStorage.getItem('mesasBillar')) || [];
+  historial = JSON.parse(localStorage.getItem('historialBillar')) || [];
+
+  historial = historial.map(item => ({
+    ...item,
+    inicio: new Date(item.inicio),
+    fin: new Date(item.fin)
+  }));
+
+  document.getElementById('precioHora').value = precioPorHora;
+  document.getElementById('precioHoraVIP').value = precioPorHoraVIP;
+  document.getElementById('modoCobro').value = usarDecimales ? 'decimal' : 'entero';
+}
+
+function guardarDatos(){
+  localStorage.setItem('mesasBillar', JSON.stringify(mesas));
+  localStorage.setItem('historialBillar', JSON.stringify(historial));
+}
+
+function formatoBs(monto){
+  if(usarDecimales) return parseFloat(monto).toFixed(2);
+  return Math.round(monto);
+}
+
+function calcularMonto(horas, mesa=null){
+  let precio = precioPorHora;
+  if(mesa && mesa.tipoMesa === 'vip') precio = precioPorHoraVIP;
+  const monto = horas * precio;
+  return usarDecimales ? parseFloat(monto.toFixed(2)) : Math.round(monto);
+}
+
+function calcularTiempoJugado(inicio){
+  const diff = Date.now() - inicio;
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000)/60000);
+  const s = Math.floor((diff % 60000)/1000);
+  return {
+    texto: `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`,
+    horasDecimal: diff / 3600000
+  };
+}
+
+function renderMesas(){
+  const lista = document.getElementById('listaMesas');
+  lista.innerHTML = '';
+
+  if(mesas.length===0){
+    lista.innerHTML = `<small>No hay mesas registradas</small>`;
+    return;
+  }
+
+  mesas.forEach((mesa, index) => {
+    const div = document.createElement('div');
+    div.className = `mesa ${mesa.estado==='ocupada' ? 'activa' : ''} ${mesa.tipoMesa==='vip' ? 'vip' : ''}`;
+
+    if(mesa.tipo==='tiempo' && mesa.fin && Date.now() >= mesa.fin){
+      div.classList.add('alarma');
+    }
+
+    let vipLabel = mesa.tipoMesa==='vip' ? `<span class="vip-badge">🌟 VIP</span>` : '';
+    let html = `<strong>${mesa.nombre}</strong> ${vipLabel}<br>`;
+
+    if(mesa.estado==='ocupada'){
+      if(mesa.tipo==='tiempo' && mesa.fin){
+        const diff = mesa.fin - Date.now();
+        const tiempo = diff > 0 
+          ? `${Math.floor(diff/3600000).toString().padStart(2,'0')}:${Math.floor((diff%3600000)/60000).toString().padStart(2,'0')}:${Math.floor((diff%60000)/1000).toString().padStart(2,'0')}`
+          : "00:00:00";
+        html += `<span class="tiempo-restante">⏳ ${tiempo}</span>`;
+      } else if(mesa.tipo==='ilimitado'){
+        const t = calcularTiempoJugado(mesa.inicio);
+        html += `<span class="tiempo-restante">▶️ ${t.texto}</span>`;
+      }
+    } else {
+      html += `<small>Libre</small>`;
+    }
+
+    html += `
+      <br>
+      <button onclick="event.stopImmediatePropagation(); eliminarMesa(${index});" 
+              class="btn-rojo" style="width:auto; padding:8px 12px; margin-top:8px; font-size:14px;">
+        Eliminar
+      </button>
+    `;
+
+    div.innerHTML = html;
+    div.addEventListener('click', () => abrirModalMesa(index));
+    lista.appendChild(div);
+  });
+}
+
+function abrirModalMesa(index){
+  const mesa = mesas[index];
+  document.getElementById('modalTitulo').textContent = mesa.nombre;
+
+  let html = '';
+
+  if(mesa.estado==='ocupada'){
+    if(mesa.tipo==='ilimitado'){
+      const tiempo = calcularTiempoJugado(mesa.inicio);
+      const total = calcularMonto(tiempo.horasDecimal, mesa);
+      html = `
+        <p><strong>Tiempo:</strong> ${tiempo.texto}</p>
+        <p><strong>Sugerido:</strong> ${formatoBs(total)} Bs</p>
+        <button onclick="cobrarIlimitado(${index},'Efectivo')" class="btn-efectivo">💵 Efectivo</button>
+        <button onclick="cobrarIlimitado(${index},'QR')" class="btn-qr">📱 QR</button>
+      `;
+    } else {
+      html = `<button onclick="finalizarMesa(${index})" class="btn-verde">✅ Finalizar Mesa</button>`;
+    }
+  } else {
+    html = `
+      <h3>Tiempo Fijo</h3>
+      <div class="preset-container">
+        <button onclick="iniciarPreset(${index},30)" class="btn-preset btn-small">30 min</button>
+        <button onclick="iniciarPreset(${index},60)" class="btn-preset btn-small">1 hora</button>
+        <button onclick="iniciarPreset(${index},120)" class="btn-preset btn-small">2 horas</button>
+      </div>
+      <button onclick="mostrarPersonalizado(${index})" style="margin-top:12px;">⏱️ Tiempo Personalizado</button>
+      <button onclick="iniciarIlimitado(${index})">♾️ Tiempo Ilimitado</button>
+    `;
+  }
+
+  document.getElementById('contenidoModal').innerHTML = html;
+  document.getElementById('modal').style.display='block';
+}
+
+/* ====================== TIEMPO PERSONALIZADO MEJORADO ====================== */
+function mostrarPersonalizado(index){
+  const html = `
+    <h3>⏱️ Tiempo Personalizado</h3>
+    <div class="personalizado-inputs">
+      <div>
+        <label><strong>Horas</strong></label>
+        <input type="number" id="horasLibre" placeholder="hora" value="" min="0">
+      </div>
+      <div>
+        <label><strong>Minutos</strong></label>
+        <input type="number" id="minutosLibre" placeholder="minutos" value="" min="0" max="59">
+      </div>
+    </div>
+    <button onclick="iniciarPersonalizado(${index})" class="btn-verde">Calcular e Iniciar</button>
+  `;
+  document.getElementById('contenidoModal').innerHTML = html;
+}
+
+function iniciarPersonalizado(index){
+  const horas = parseFloat(document.getElementById('horasLibre').value) || 0;
+  const minutos = parseFloat(document.getElementById('minutosLibre').value) || 0;
+  const totalMin = horas*60 + minutos;
+
+  if(totalMin <= 0){
+    alert("❌ Debes ingresar al menos 1 minuto");
+    return;
+  }
+
+  const monto = calcularMonto(totalMin/60, mesas[index]);
+  mostrarOpcionesPago(index, totalMin, monto);
+}
+
+// ==================== Resto de funciones (sin cambios) ====================
+function iniciarPreset(index, minutos){
+  const monto = calcularMonto(minutos/60, mesas[index]);
+  mostrarOpcionesPago(index, minutos, monto);
+}
+
+function mostrarOpcionesPago(index, minutos, monto){
+  const html = `
+    <p><strong>Precio:</strong> ${formatoBs(monto)} Bs</p>
+    <button onclick="confirmarInicio(${index},${minutos},${monto},'Efectivo')" class="btn-efectivo">💵 Efectivo</button>
+    <button onclick="confirmarInicio(${index},${minutos},${monto},'QR')" class="btn-qr">📱 QR</button>
+  `;
+  document.getElementById('contenidoModal').innerHTML = html;
+}
+
+function confirmarInicio(index, minutos, monto, metodo){
+  if(!confirm(`Iniciar ${minutos} minutos\n\nMonto: ${formatoBs(monto)} Bs\nMétodo: ${metodo}`)) return;
+
+  const mesa = mesas[index];
+  mesa.estado='ocupada';
+  mesa.tipo='tiempo';
+  mesa.inicio=Date.now();
+  mesa.fin= Date.now() + minutos*60000;
+  mesa.montoCobrado=monto;
+  mesa.metodoPago=metodo;
+  mesa.alarmaSonada=false;
+
+  historial.unshift({
+    mesa: mesa.nombre,
+    inicio: new Date(mesa.inicio),
+    fin: new Date(mesa.fin),
+    tiempo: `${Math.floor(minutos/60)}h ${minutos%60}min`,
+    montoFinal: monto,
+    metodo
+  });
+
+  guardarDatos();
+  cerrarModal();
+  renderMesas();
+}
+
+function iniciarIlimitado(index){
+  const mesa = mesas[index];
+  mesa.estado='ocupada';
+  mesa.tipo='ilimitado';
+  mesa.inicio=Date.now();
+  guardarDatos();
+  cerrarModal();
+  renderMesas();
+}
+
+function cobrarIlimitado(index, metodo){
+  const mesa = mesas[index];
+  const tiempo = calcularTiempoJugado(mesa.inicio);
+  const sugerido = calcularMonto(tiempo.horasDecimal, mesa);
+
+  document.getElementById('modalTitulo').textContent = `💰 Cobrar ${mesa.nombre}`;
+
+  const html = `
+    <p><strong>Tiempo jugado:</strong><br>${tiempo.texto}</p>
+    <p style="background:#2e7d32;padding:12px;border-radius:10px;text-align:center;font-size:24px;font-weight:bold;">
+      Sugerido: ${formatoBs(sugerido)} Bs
+    </p>
+    <label style="display:block;margin-top:16px;margin-bottom:8px;font-weight:bold;">¿Cuánto cobraste?</label>
+    <input type="number" id="montoCobradoManual" value="${formatoBs(sugerido)}" min="0" step="${usarDecimales ? '0.01' : '1'}" style="font-size:24px;text-align:center;font-weight:bold;">
+    <button onclick="confirmarCobroIlimitado(${index},'${metodo}')" class="btn-verde" style="margin-top:16px;">✅ Confirmar Cobro</button>
+  `;
+
+  document.getElementById('contenidoModal').innerHTML = html;
+}
+
+function confirmarCobroIlimitado(index, metodo){
+  const mesa = mesas[index];
+  const tiempo = calcularTiempoJugado(mesa.inicio);
+  const montoCobrado = parseFloat(document.getElementById('montoCobradoManual').value) || 0;
+
+  historial.unshift({
+    mesa: mesa.nombre,
+    inicio: new Date(mesa.inicio),
+    fin: new Date(),
+    tiempo: tiempo.texto,
+    montoFinal: montoCobrado,
+    metodo
+  });
+
+  guardarDatos();
+  alert(`✅ Cobro registrado\n\nMesa: ${mesa.nombre}\nTiempo: ${tiempo.texto}\nCobrado: ${formatoBs(montoCobrado)} Bs`);
+  liberarMesa(index);
+}
+
+function finalizarMesa(index){
+  const mesa = mesas[index];
+  const tiempo = calcularTiempoJugado(mesa.inicio);
+  alert(`✅ Mesa finalizada\n\nTiempo: ${tiempo.texto}\nCobrado: ${formatoBs(mesa.montoCobrado)} Bs`);
+  liberarMesa(index);
+}
+
+function liberarMesa(index){
+  const mesa = mesas[index];
+  mesa.estado='libre';
+  mesa.tipo=null;
+  mesa.inicio=null;
+  mesa.fin=null;
+  mesa.alarmaSonada=false;
+  guardarDatos();
+  cerrarModal();
+  renderMesas();
+}
+
+function actualizarTimers(){
+  let alarma = false;
+  mesas.forEach(mesa => {
+    if(mesa.tipo==='tiempo' && mesa.fin && Date.now() >= mesa.fin && !mesa.alarmaSonada){
+      mesa.alarmaSonada = true;
+      alarma = true;
+    }
+  });
+
+  if(alarma){
+    if(navigator.vibrate) navigator.vibrate([600,200,600]);
+    new Audio('https://www.soundjay.com/buttons/beep-07.mp3').play().catch(()=>{});
+  }
+  renderMesas();
+}
+
+function guardarConfig(){
+  precioPorHora = parseFloat(document.getElementById('precioHora').value) || 50;
+  precioPorHoraVIP = parseFloat(document.getElementById('precioHoraVIP').value) || 80;
+  usarDecimales = document.getElementById('modoCobro').value === 'decimal';
+  localStorage.setItem('precioHora', precioPorHora);
+  localStorage.setItem('precioHoraVIP', precioPorHoraVIP);
+  localStorage.setItem('usarDecimales', JSON.stringify(usarDecimales));
+  alert("✅ Configuración guardada");
+}
+
+function agregarMesa(){
+  const nombre = document.getElementById('nombreMesa').value.trim();
+  if(!nombre){ alert("Escribe el nombre"); return; }
+  const tipoMesa = document.getElementById('tipoMesa').value;
+  mesas.push({ id:Date.now(), nombre, tipoMesa, estado:'libre' });
+  guardarDatos();
+  renderMesas();
+  document.getElementById('nombreMesa').value='';
+}
+
+function eliminarMesa(index){
+  if(!confirm("¿Eliminar mesa?")) return;
+  mesas.splice(index,1);
+  guardarDatos();
+  renderMesas();
+}
+
+function mostrarHistorial(){
+  let total = 0;
+  historial.forEach(item => total += item.montoFinal || 0);
+  let html = `<div class="resumen"><strong>Total: ${formatoBs(total)} Bs</strong></div>`;
+  if(historial.length===0) html += `<p>No hay registros todavía.</p>`;
+  historial.forEach(item => {
+    html += `
+      <div class="historial-item">
+        <strong>${item.mesa}</strong><br><br>
+        ${item.inicio.toLocaleString('es-BO')}<br>→<br>${item.fin.toLocaleString('es-BO')}<br><br>
+        Tiempo: ${item.tiempo}<br>
+        <strong>${formatoBs(item.montoFinal)} Bs</strong><br>
+        ${item.metodo}
+      </div>
+    `;
+  });
+  document.getElementById('modalTitulo').textContent = '📋 Historial';
+  document.getElementById('contenidoModal').innerHTML = html;
+  document.getElementById('modal').style.display='block';
+}
+
+function exportarControlDelDia(){
+  const hoy = new Date().toISOString().slice(0,10);
+  const delDia = historial.filter(item => item.inicio.toISOString().slice(0,10) === hoy);
+  if(delDia.length===0){ alert("No hay sesiones hoy"); return; }
+
+  let csv = "Mesa,Inicio,Fin,Tiempo,Monto,Método\n";
+  delDia.forEach(item => {
+    csv += `"${item.mesa}","${item.inicio.toLocaleString('es-BO')}","${item.fin.toLocaleString('es-BO')}","${item.tiempo}",${formatoBs(item.montoFinal)},"${item.metodo}"\n`;
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `Control_Dia_${hoy}.csv`;
+  link.click();
+  alert("✅ Archivo descargado");
+}
+
+function cerrarModal(){
+  document.getElementById('modal').style.display='none';
+}
+
+window.onload = () => {
+  setInterval(actualizarTimers, 1000);
+};
+</script>
+</body>
+</html>
